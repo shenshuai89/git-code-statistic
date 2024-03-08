@@ -1,0 +1,43 @@
+{
+  "name": "git-code-statistic",
+  "displayName": "git code statistic",
+  "description": "Analyze the code submission volume under the git account",
+  "version": "0.0.1",
+  "publisher": "shenshuai",
+  "engines": {
+    "vscode": "^1.87.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:git-code-statistic.helloworld"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "git-code-statistic.helloworld",
+        "title": "Hello World"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "start": "node ./extension.js",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.87.0",
+    "@vscode/test-cli": "^0.0.6",
+    "@vscode/test-electron": "^2.3.9",
+    "eslint": "^8.56.0",
+    "q": "^1.5.1",
+    "qrcode": "^1.5.3",
+    "typescript": "^5.3.3",
+    "vscode": "^1.1.37"
+  }
+}
