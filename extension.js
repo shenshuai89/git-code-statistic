@@ -1,28 +1,19 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 const Q = require('q');
 const QRCode = require('qrcode');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
+const util = require('util');
+const execPromisify = util.promisify(exec);
 
 function activate(context) {
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with  registerCommand
-  // The commandId parameter must match the command field in package.json
   let disposable = vscode.commands.registerCommand(
     'git-code-statistic.helloworld',
     function () {
       const git = new GitTools(__dirname);
-      git.remote().then((remote)=>{
-        if(remote){
-          git.status().then((result) => {
-            console.log(result);
-            // vscode.window.showInformationMessage(result);
-          })
-        } else {
-          console.error("git no remote")
-        }
-      })
+      git.logMonth().then((result) => {
+        console.log(result);
+        // vscode.window.showInformationMessage(result);
+      });
       /* getSelectedTextOrPrompt('Text to convert into QR code').then((text) => {
         if (!text) {
           return;
@@ -56,9 +47,23 @@ function activate(context) {
 class GitTools {
   constructor(cwd) {
     this.cwd = cwd;
-    console.log("first", cwd)
+    this.user = '';
+    this.init();
   }
-  async remote(){
+  async init() {
+    this.startChildProcess('git', ['remote', '-v'])
+      .then(async (res) => {
+        this.user = await this.startChildProcess('git', [
+          'config',
+          'user.name',
+        ]);
+        console.log(this.user, "username");
+      })
+      .catch((err) => {
+        console.error('git no remote', err);
+      });
+  }
+  async remote() {
     try {
       var params = ['remote', '-v'];
       let result = await this.startChildProcess('git', params);
@@ -67,8 +72,21 @@ class GitTools {
       console.error(err);
     }
   }
+  async logMonth() {
+    try {
+      // var params = ['log', `--author="shenshuai_dr" --pretty=tformat: --numstat --since=2024-3-01 --until=2024-3-31 | ${awk} "{ add += $1; subs += $2; all += $1 + $2 } END { printf '添加行: %s, 移除行: %s, 总计(添加-移除): %s\n', add, subs, all }"`];
+      var params = ['log', `--author=${this.user} --pretty=tformat: --numstat`];
+      let result =await execPromisify(`git log --author="shenshuai_dr" --pretty=tformat: --numstat --since=2024-3-01 --until=2024-3-31`, { cwd: this.cwd });
+      console.log(result, "log month result");
+      // let statisRes = await execPromisify(`${result} | awk "{ add += $1; subs += $2; all += $1 + $2 } END { printf '添加行: %s, 移除行: %s, 总计(添加-移除): %s\n', add, subs, all }"`)
+      // console.log(statisRes, "log month result");
+      return result;
+    } catch (err) {
+      console.error(err);
+    }
+  }
   async branch() {
-	  try {
+    try {
       var params = ['branch', '-a'];
       let result = await this.startChildProcess('git', params);
       return result.toString();
