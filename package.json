@@ -15,6 +15,24 @@
   ],
   "main": "./extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "package-explorer",
+          "title": "Git code statistic",
+          "icon": "resources/search.svg"
+        }
+      ]
+    },
+    "views": {
+      "package-explorer": [
+        {
+          "type": "webview",
+          "id": "package-dependencies",
+          "name": "GitCodeStatistic"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "git-code-statistic.helloworld",
