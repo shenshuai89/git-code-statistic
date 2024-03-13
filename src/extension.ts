@@ -4,6 +4,7 @@ import {
   window,
   workspace,
   ViewColumn,
+  WebviewPanel,
 } from 'vscode';
 import { GitTools } from './gitTools';
 import TreeProvider from './treeData';
@@ -76,40 +77,58 @@ export function activate(context: ExtensionContext) {
 }
 
 function searchByDate(userName: string) {
-  getSelectedTextOrPrompt('输入开始时间,如2020-01-31或2020/01/31').then(function (since) {
-    if (!since) {
-      return;
-    } else {
-      getSelectedTextOrPrompt('输入结束时间，如2080-01-31或2080/01/31').then(function (until) {
-        if (!until) {
-          return;
-        }
-        git
-          .logMonth({
-            author: userName,
-            since: since,
-            until: until,
-          })
-          .then((result) => {
-            console.log(result, 'git-code-statistic.gitcode');
+  // 追踪当前 webview 面板
+  let currentPanel: WebviewPanel | undefined = undefined;
+  getSelectedTextOrPrompt('输入开始时间,如2020-01-31或2020/01/31').then(
+    function (since) {
+      if (!since) {
+        return;
+      } else {
+        getSelectedTextOrPrompt('输入结束时间，如2080-01-31或2080/01/31').then(
+          function (until) {
+            if (!until) {
+              return;
+            }
+            git
+              .logMonth({
+                author: userName,
+                since: since,
+                until: until,
+              })
+              .then((result) => {
+                // 获取当前活动的编辑器
+                const columnToShowIn = window.activeTextEditor
+                  ? window.activeTextEditor.viewColumn
+                  : undefined;
+                if (currentPanel) {
+                  // 如果我们已经有了一个面板，那就把它显示到目标列布局中
+                  currentPanel.reveal(columnToShowIn);
+                } else {
+                  /* 新创建一个页面，用了存放生成的数据 */
+                  currentPanel = window.createWebviewPanel(
+                    'git-code-statistic', // 只供内部使用，这个 webview 的标识
+                    'git code statistic', // 给用户显示的面板标题
+                    ViewColumn.One, // 给新的 webview 面板一个编辑器视图
+                    {
+                      enableScripts: true, // 启用 javascript 脚本
+                      retainContextWhenHidden: true, // 隐藏时保留上下文
+                    } // webview 面板的内容配置
+                  );
+                  currentPanel.webview.html = (result as string).slice(5);
+                  // 当前面板被关闭后重置
+                  currentPanel.onDidDispose(() => {
+                    currentPanel = undefined;
+                  }, null);
+                }
 
-            /* 新创建一个页面，用了存放生成的数据 */
-            const panel = window.createWebviewPanel(
-              'git-code-statistic', // 只供内部使用，这个 webview 的标识
-              'git code statistic', // 给用户显示的面板标题
-              ViewColumn.One, // 给新的 webview 面板一个编辑器视图
-              {
-                enableScripts: true, // 启用 javascript 脚本
-                retainContextWhenHidden: true, // 隐藏时保留上下文
-              } // webview 面板的内容配置
-            );
-            panel.webview.html = (result as string).slice(5);
-            // 显示提示框
-            // vscode.window.showInformationMessage(result);
-          });
-      });
+                // 显示提示框
+                // vscode.window.showInformationMessage(result);
+              });
+          }
+        );
+      }
     }
-  });
+  );
 }
 
 // 获取当前选中内容 或者 提示用户输入

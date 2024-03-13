@@ -7,6 +7,9 @@
   "engines": {
     "vscode": "^1.87.0"
   },
+  "repository": "https://github.com/shenshuai89/git-code-statistic.git",
+  "license": "MIT",
+  "icon": "resources/icon.png",
   "categories": [
     "Other"
   ],
@@ -42,7 +45,7 @@
       },
       {
         "command": "userList.add",
-        "title": "新增",
+        "title": "刷新",
         "icon": {
           "light": "resources/light/add.svg",
           "dark": "resources/dark/add.svg"
