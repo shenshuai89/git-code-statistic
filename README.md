@@ -1,31 +1,17 @@
 # git-code-statistic README
 
-This is the README for your extension "git-code-statistic". After writing up a brief description, we recommend including the following sections.
+This is the README for vscode plugin extension "git-code-statistic". 
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Share Git submission code volume based on all user users of the project
+There are two ways to use it:
+1: Click on the icon of the plugin to see all users under the project. Click on the view button on the right side of the user, and a date will appear for you to choose to query. Enter the start date such as 2020-01-01 and the end date such as 2888-01-10. After entering, a code will be generated to submit a file for record statistics
+2: Directly use the shortcut keys ctrl+Shift+p, enter 'gitcode', and then you can freely enter git userName. After entering, continue to enter the query date.
 
-For example if there is an image subfolder under your extension project workspace:
+### For Example
+Analyze project ![vscode extension samples](https://github.com/microsoft/vscode-extension-samples)
 
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
 
 ## Known Issues
 
@@ -33,20 +19,11 @@ Calling out known issues can help limit users opening duplicate issues against y
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+Update version description
 
-### 1.0.0
-
+### 1.0.0 Support users to query and submit code number
 
 ---
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
 
 ## For more information
 
