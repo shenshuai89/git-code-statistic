@@ -24,14 +24,14 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "tree-list",
-          "title": "Git UserList",
+          "id": "user-list",
+          "title": "GitCodeStatistics",
           "icon": "resources/search.svg"
         }
       ]
     },
     "views": {
-      "tree-list": [
+      "user-list": [
         {
           "id": "gitcode-userlist",
           "name": "项目成员"
