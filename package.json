@@ -2,7 +2,7 @@
   "name": "git-code-statistic",
   "displayName": "git code statistic",
   "description": "Analyze the code submission volume under the git account",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "shenshuai",
   "engines": {
     "vscode": "^1.87.0"
