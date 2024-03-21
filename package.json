@@ -17,7 +17,7 @@
     "onView:gitcode-userlist",
     "onCommand:git-code-statistic.gitcode",
     "onCommand:userList.add",
-    "onCommand:userList.item.remove"
+    "onCommand:userList.item.search"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -44,34 +44,34 @@
         "title": "git代码统计分析"
       },
       {
-        "command": "userList.add",
+        "command": "userList.refresh",
         "title": "刷新",
         "icon": {
-          "light": "resources/light/add.svg",
-          "dark": "resources/dark/add.svg"
+          "light": "resources/light/refresh.svg",
+          "dark": "resources/dark/refresh.svg"
         }
       },
       {
-        "command": "userList.item.remove",
+        "command": "userList.item.search",
         "title": "查看"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "userList.add",
+          "command": "userList.refresh",
           "when": "view == gitcode-userlist",
           "group": "navigation"
         }
       ],
-			"view/item/context": [
-				{
-					"when": "view == gitcode-userlist",
-					"command": "userList.item.remove",
-					"group": "inline"
-				}
-			]
-		}
+      "view/item/context": [
+        {
+          "when": "view == gitcode-userlist",
+          "command": "userList.item.search",
+          "group": "inline"
+        }
+      ]
+    }
   },
   "scripts": {
     "lint": "eslint ./src --ext .ts",
@@ -100,5 +100,8 @@
     "ts-loader": "^8.0.2",
     "webpack-cli": "3.3.12",
     "vscode": "^1.1.37"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.10"
   }
 }

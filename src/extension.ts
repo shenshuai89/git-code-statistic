@@ -5,15 +5,24 @@ import {
   workspace,
   ViewColumn,
   WebviewPanel,
+  QuickPickItem,
+  Uri,
 } from 'vscode';
 import { GitTools } from './gitTools';
 import TreeProvider from './treeData';
+import * as dayjs from 'dayjs';
+import * as path from 'path';
 
 const git = new GitTools(workspace.workspaceFolders![0].uri.fsPath);
 export function activate(context: ExtensionContext) {
   window.createTreeView('gitcode-userlist', {
     treeDataProvider: new TreeProvider(),
   });
+
+  const ChartJSSrc: unknown = Uri.file(
+    path.join(context.extensionPath, 'resources', 'Chart.bundle.min.js')
+  ).with({ scheme: 'vscode-resource' });
+
   let disposable = commands.registerCommand(
     'git-code-statistic.gitcode',
     async function () {
@@ -65,13 +74,76 @@ export function activate(context: ExtensionContext) {
 
   context.subscriptions.push(
     disposable,
-    commands.registerCommand(`userList.add`, () => {
-      console.log(workspace!.workspaceFolders![0].uri.fsPath, 'add to git');
+    commands.registerCommand(`userList.refresh`, () => {
+      // console.log(workspace!.workspaceFolders![0].uri.fsPath, 'refresh to git');
+      // 刷新数据列表
+      window.createTreeView('gitcode-userlist', {
+        treeDataProvider: new TreeProvider(),
+      });
     }),
-    commands.registerCommand(`userList.item.remove`, (user) => {
+    commands.registerCommand(`userList.item.search`, (user) => {
       let userName = user.label.split(' ')[0];
-      console.log(user, 'remove removeremoveremove');
-      searchByDate(userName);
+      // searchByDate(userName);
+      // 打开一个快速选择列表
+      window
+        .showQuickPick(
+          // ["选项一", "选项二", "选项三"], // 简单的显示多个选项
+          [
+            {
+              // 对象的形式可以配置更多东西
+              label: 'Current month',
+              // 可以指定官方提供的图标id https://code.visualstudio.com/api/references/icons-in-labels#icon-listing
+              // $(bug) 设置的是图标
+              // description: "选项一描述$(bug)",
+              detail: 'Submit code statistics current month',
+            },
+            {
+              label: 'Last month',
+              detail: 'Submit code statistics Last month',
+            },
+            {
+              label: 'Past six months',
+              detail: 'Submit code statistics Last six month',
+            },
+            {
+              label: 'Custom date query',
+              detail: 'setting custom query date ',
+            },
+          ],
+          {
+            title: 'Query date', // 标题
+            placeHolder: 'Please select an option！', // 占位符文本
+            canPickMany: false, // 是否可以多选
+          }
+        )
+        .then((res: QuickPickItem | undefined) => {
+          if (!res) return;
+          const { label } = res;
+          // console.log(res, userName, dayjs().format(), 'userNameuserName'); // 这里就是上面数组中对应的对象信息
+          if (label === 'Current month') {
+            searchBySetDate(
+              userName,
+              dayjs().startOf('month').format('YYYY-MM-DD'),
+              dayjs().endOf('month').format('YYYY-MM-DD')
+            );
+          } else if (label === 'Last month') {
+            searchBySetDate(
+              userName,
+              dayjs().add(-1, 'month').startOf('month').format('YYYY-MM-DD'),
+              dayjs().add(-1, 'month').endOf('month').format('YYYY-MM-DD')
+            );
+          } else if (label === 'Past six months') {
+            searchBySetDate(
+              userName,
+              dayjs().add(-5, 'month').startOf('month').format('YYYY-MM-DD'),
+              dayjs().endOf('month').format('YYYY-MM-DD'),
+              ChartJSSrc as string
+            );
+          } else {
+            // 自定义日期
+            searchByDate(userName);
+          }
+        });
     })
   );
 }
@@ -116,7 +188,12 @@ function searchByDate(userName: string) {
                       retainContextWhenHidden: true, // 隐藏时保留上下文
                     } // webview 面板的内容配置
                   );
-                  currentPanel.webview.html = setPanelHtml(userName, since, until, result);
+                  currentPanel.webview.html = setPanelHtml(
+                    userName,
+                    since,
+                    until,
+                    result
+                  );
                 } else {
                   /* 新创建一个页面，用了存放生成的数据 */
                   currentPanel = window.createWebviewPanel(
@@ -128,7 +205,12 @@ function searchByDate(userName: string) {
                       retainContextWhenHidden: true, // 隐藏时保留上下文
                     } // webview 面板的内容配置
                   );
-                  currentPanel.webview.html = setPanelHtml(userName, since, until, result);
+                  currentPanel.webview.html = setPanelHtml(
+                    userName,
+                    since,
+                    until,
+                    result
+                  );
                 }
               });
           }
@@ -137,15 +219,82 @@ function searchByDate(userName: string) {
     }
   );
 }
+function searchBySetDate(
+  userName: string,
+  since: object | string,
+  until: object | string,
+  ChartJSSrc?: string
+) {
+  git
+    .logMonth({
+      author: userName,
+      since: since,
+      until: until,
+    })
+    .then((result) => {
+      // 获取当前活动的编辑器
+      const columnToShowIn = window.activeTextEditor
+        ? window.activeTextEditor.viewColumn
+        : undefined;
+      if (currentPanel) {
+        // 如果我们已经有了一个面板，那就把它显示到目标列布局中
+        // currentPanel.reveal(columnToShowIn);
+        // 当前面板被关闭后重置
+        // 先进行销毁
+        currentPanel!.dispose();
+        /* 新创建一个页面，用了存放生成的数据 */
+        currentPanel = window.createWebviewPanel(
+          'git-code-statistic', // 只供内部使用，这个 webview 的标识
+          'git code statistic', // 给用户显示的面板标题
+          ViewColumn.One, // 给新的 webview 面板一个编辑器视图
+          {
+            enableScripts: true, // 启用 javascript 脚本
+            retainContextWhenHidden: true, // 隐藏时保留上下文
+          } // webview 面板的内容配置
+        );
+        currentPanel.webview.html = setPanelHtml(
+          userName,
+          since,
+          until,
+          result,
+          ChartJSSrc
+        );
+      } else {
+        /* 新创建一个页面，用了存放生成的数据 */
+        currentPanel = window.createWebviewPanel(
+          'git-code-statistic', // 只供内部使用，这个 webview 的标识
+          'git code statistic', // 给用户显示的面板标题
+          ViewColumn.Active, // 给新的 webview 面板一个编辑器视图
+          {
+            enableScripts: true, // 启用 javascript 脚本
+            retainContextWhenHidden: true, // 隐藏时保留上下文
+          } // webview 面板的内容配置
+        );
+        currentPanel.webview.html = setPanelHtml(
+          userName,
+          since,
+          until,
+          result,
+          ChartJSSrc
+        );
+      }
+    });
+}
 
 const setPanelHtml = (
   userName: string,
-  since: object,
-  until: object,
-  result: unknown
+  since: object | string,
+  until: object | string,
+  result: unknown,
+  ChartJSSrc?: string
 ) => {
   return `
-    <html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>git code analysis</title>
+      </head>
       <body>
         <h3>git code analysis</h3>
         <p>The project submitted code line by <b>${userName}</b> from <b>${since}</b> to <b>${until}</b> is as follows</p>

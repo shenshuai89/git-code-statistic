@@ -1,4 +1,6 @@
 const { spawn } = require('child_process');
+const dayjs = require("dayjs");
+console.log(dayjs().add(-5, 'month').startOf('month').format('YYYY-MM-DD'),dayjs().endOf('month').format('YYYY-MM-DD'));
 
 // 
 // const process = spawn(`echo -e "A line 1\nA line 2" | awk 'BEGIN{ print "Start" } { print } END{ print "End" }'`, { shell: true });
