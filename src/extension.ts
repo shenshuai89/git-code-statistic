@@ -7,28 +7,28 @@ import {
   WebviewPanel,
   QuickPickItem,
   Uri,
-} from 'vscode';
-import { GitTools } from './gitTools';
-import TreeProvider from './treeData';
-import * as dayjs from 'dayjs';
-import * as path from 'path';
+} from "vscode";
+import { GitTools } from "./gitTools";
+import TreeProvider from "./treeData";
+import * as dayjs from "dayjs";
+import * as path from "path";
 
 const git = new GitTools(workspace.workspaceFolders![0].uri.fsPath);
 export function activate(context: ExtensionContext) {
-  window.createTreeView('gitcode-userlist', {
+  window.createTreeView("gitcode-userlist", {
     treeDataProvider: new TreeProvider(),
   });
 
   const ChartJSSrc: unknown = Uri.file(
-    path.join(context.extensionPath, 'resources', 'Chart.bundle.min.js')
-  ).with({ scheme: 'vscode-resource' });
+    path.join(context.extensionPath, "resources", "Chart.bundle.min.js")
+  ).with({ scheme: "vscode-resource" });
 
   let disposable = commands.registerCommand(
-    'git-code-statistic.gitcode',
+    "git-code-statistic.gitcode",
     async function () {
       // const git = new GitTools(__dirname);
       // console.log(workspace.workspaceFolders[0].uri.fsPath, "pathpath to git")
-      getSelectedTextOrPrompt('输入作者').then(function (author) {
+      getSelectedTextOrPrompt("输入作者").then(function (author) {
         if (!author) {
           return;
         } else {
@@ -77,12 +77,12 @@ export function activate(context: ExtensionContext) {
     commands.registerCommand(`userList.refresh`, () => {
       // console.log(workspace!.workspaceFolders![0].uri.fsPath, 'refresh to git');
       // 刷新数据列表
-      window.createTreeView('gitcode-userlist', {
+      window.createTreeView("gitcode-userlist", {
         treeDataProvider: new TreeProvider(),
       });
     }),
     commands.registerCommand(`userList.item.search`, (user) => {
-      let userName = user.label.split(' ')[0];
+      let userName = user.label.split(" ")[0];
       // searchByDate(userName);
       // 打开一个快速选择列表
       window
@@ -91,28 +91,28 @@ export function activate(context: ExtensionContext) {
           [
             {
               // 对象的形式可以配置更多东西
-              label: 'Current month',
+              label: "Current month",
               // 可以指定官方提供的图标id https://code.visualstudio.com/api/references/icons-in-labels#icon-listing
               // $(bug) 设置的是图标
               // description: "选项一描述$(bug)",
-              detail: 'Submit code statistics current month',
+              detail: "Submit code statistics current month",
             },
             {
-              label: 'Last month',
-              detail: 'Submit code statistics Last month',
+              label: "Last month",
+              detail: "Submit code statistics Last month",
             },
             {
-              label: 'Past six months',
-              detail: 'Submit code statistics Last six month',
+              label: "Past six months",
+              detail: "Submit code statistics Last six month",
             },
             {
-              label: 'Custom date query',
-              detail: 'setting custom query date ',
+              label: "Custom date query",
+              detail: "setting custom query date ",
             },
           ],
           {
-            title: 'Query date', // 标题
-            placeHolder: 'Please select an option！', // 占位符文本
+            title: "Query date", // 标题
+            placeHolder: "Please select an option！", // 占位符文本
             canPickMany: false, // 是否可以多选
           }
         )
@@ -120,23 +120,23 @@ export function activate(context: ExtensionContext) {
           if (!res) return;
           const { label } = res;
           // console.log(res, userName, dayjs().format(), 'userNameuserName'); // 这里就是上面数组中对应的对象信息
-          if (label === 'Current month') {
+          if (label === "Current month") {
             searchBySetDate(
               userName,
-              dayjs().startOf('month').format('YYYY-MM-DD'),
-              dayjs().endOf('month').format('YYYY-MM-DD')
+              dayjs().startOf("month").format("YYYY-MM-DD"),
+              dayjs().endOf("month").format("YYYY-MM-DD")
             );
-          } else if (label === 'Last month') {
+          } else if (label === "Last month") {
             searchBySetDate(
               userName,
-              dayjs().add(-1, 'month').startOf('month').format('YYYY-MM-DD'),
-              dayjs().add(-1, 'month').endOf('month').format('YYYY-MM-DD')
+              dayjs().add(-1, "month").startOf("month").format("YYYY-MM-DD"),
+              dayjs().add(-1, "month").endOf("month").format("YYYY-MM-DD")
             );
-          } else if (label === 'Past six months') {
+          } else if (label === "Past six months") {
             searchBySetDate(
               userName,
-              dayjs().add(-5, 'month').startOf('month').format('YYYY-MM-DD'),
-              dayjs().endOf('month').format('YYYY-MM-DD'),
+              dayjs().add(-5, "month").startOf("month").format("YYYY-MM-DD"),
+              dayjs().endOf("month").format("YYYY-MM-DD"),
               ChartJSSrc as string
             );
           } else {
@@ -151,12 +151,12 @@ export function activate(context: ExtensionContext) {
 // 追踪当前 webview 面板
 let currentPanel: WebviewPanel | undefined = undefined;
 function searchByDate(userName: string) {
-  getSelectedTextOrPrompt('输入开始时间,如2020-01-31或2020/01/31').then(
+  getSelectedTextOrPrompt("输入开始时间,如2020-01-31或2020/01/31").then(
     function (since) {
       if (!since) {
         return;
       } else {
-        getSelectedTextOrPrompt('输入结束时间，如2080-01-31或2080/01/31').then(
+        getSelectedTextOrPrompt("输入结束时间，如2080-01-31或2080/01/31").then(
           function (until) {
             if (!until) {
               return;
@@ -180,8 +180,8 @@ function searchByDate(userName: string) {
                   currentPanel!.dispose();
                   /* 新创建一个页面，用了存放生成的数据 */
                   currentPanel = window.createWebviewPanel(
-                    'git-code-statistic', // 只供内部使用，这个 webview 的标识
-                    'git code statistic', // 给用户显示的面板标题
+                    "git-code-statistic", // 只供内部使用，这个 webview 的标识
+                    "git code statistic", // 给用户显示的面板标题
                     ViewColumn.One, // 给新的 webview 面板一个编辑器视图
                     {
                       enableScripts: true, // 启用 javascript 脚本
@@ -197,8 +197,8 @@ function searchByDate(userName: string) {
                 } else {
                   /* 新创建一个页面，用了存放生成的数据 */
                   currentPanel = window.createWebviewPanel(
-                    'git-code-statistic', // 只供内部使用，这个 webview 的标识
-                    'git code statistic', // 给用户显示的面板标题
+                    "git-code-statistic", // 只供内部使用，这个 webview 的标识
+                    "git code statistic", // 给用户显示的面板标题
                     ViewColumn.Active, // 给新的 webview 面板一个编辑器视图
                     {
                       enableScripts: true, // 启用 javascript 脚本
@@ -244,8 +244,8 @@ function searchBySetDate(
         currentPanel!.dispose();
         /* 新创建一个页面，用了存放生成的数据 */
         currentPanel = window.createWebviewPanel(
-          'git-code-statistic', // 只供内部使用，这个 webview 的标识
-          'git code statistic', // 给用户显示的面板标题
+          "git-code-statistic", // 只供内部使用，这个 webview 的标识
+          "git code statistic", // 给用户显示的面板标题
           ViewColumn.One, // 给新的 webview 面板一个编辑器视图
           {
             enableScripts: true, // 启用 javascript 脚本
@@ -262,8 +262,8 @@ function searchBySetDate(
       } else {
         /* 新创建一个页面，用了存放生成的数据 */
         currentPanel = window.createWebviewPanel(
-          'git-code-statistic', // 只供内部使用，这个 webview 的标识
-          'git code statistic', // 给用户显示的面板标题
+          "git-code-statistic", // 只供内部使用，这个 webview 的标识
+          "git code statistic", // 给用户显示的面板标题
           ViewColumn.Active, // 给新的 webview 面板一个编辑器视图
           {
             enableScripts: true, // 启用 javascript 脚本
@@ -298,7 +298,7 @@ const setPanelHtml = (
       <body>
         <h3>git code analysis</h3>
         <p>The project submitted code line by <b>${userName}</b> from <b>${since}</b> to <b>${until}</b> is as follows</p>
-        <div style='font-size: 18px;'>${(result as string).slice(5)}</div>
+        <div style='font-size: 18px;'>${result as string}</div>
       </body>
     </html>
   `;
@@ -312,7 +312,7 @@ function getSelectedTextOrPrompt(prompt: string) {
       const selection = activeTextEditor.selection,
         start = selection.start,
         end = selection.end;
-      console.log(activeTextEditor, 'selection');
+      console.log(activeTextEditor, "selection");
       if (start.line !== end.line || start.character !== end.character) {
         return resolve(activeTextEditor.document.getText(selection));
       }
