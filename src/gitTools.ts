@@ -167,7 +167,7 @@ export class GitTools {
     // git log --pretty=format:"%an <%ae>"| sort -u
     try {
       const res = await this.startChildProcessNoParams(
-        `git log --pretty=format:"%an <%ae>"| sort -u`
+        `git log --pretty=format:"%an <%ae>"`
       );
       let resArr = (res as string).split('\n');
       let resSet = new Set();
