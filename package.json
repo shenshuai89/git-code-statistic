@@ -2,10 +2,10 @@
   "name": "git-code-statistic",
   "displayName": "git code statistic",
   "description": "Analyze the code submission volume under the git account",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "publisher": "shenshuai",
   "engines": {
-    "vscode": "^1.87.0"
+    "vscode": "^1.75.0"
   },
   "repository": "https://github.com/shenshuai89/git-code-statistic.git",
   "license": "MIT",
@@ -87,7 +87,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
-    "@types/vscode": "^1.87.0",
+    "@types/vscode": "^1.75.0",
     "@typescript-eslint/eslint-plugin": "^3.9.1",
     "@typescript-eslint/parser": "^3.9.1",
     "@vscode/test-cli": "^0.0.6",

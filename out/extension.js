@@ -107,12 +107,14 @@ const gitTools_1 = __webpack_require__(2);
 const treeData_1 = __webpack_require__(4);
 const dayjs = __webpack_require__(5);
 const path = __webpack_require__(6);
+const fs = __webpack_require__(7);
 const git = new gitTools_1.GitTools(vscode_1.workspace.workspaceFolders[0].uri.fsPath);
 function activate(context) {
     vscode_1.window.createTreeView('gitcode-userlist', {
         treeDataProvider: new treeData_1.default(),
     });
-    const ChartJSSrc = vscode_1.Uri.file(path.join(context.extensionPath, 'resources', 'Chart.bundle.min.js')).with({ scheme: 'vscode-resource' });
+    // const ChartJSSrc: unknown = path.join(context.extensionPath, 'resources', 'Chart.bundle.min.js')
+    const ChartJSSrc = context.extensionPath;
     let disposable = vscode_1.commands.registerCommand('git-code-statistic.gitcode', function () {
         return __awaiter(this, void 0, void 0, function* () {
             // const git = new GitTools(__dirname);
@@ -122,41 +124,7 @@ function activate(context) {
                     return;
                 }
                 else {
-                    searchByDate(author);
-                    /* getSelectedTextOrPrompt('输入开始时间').then(function (since) {
-                      if (!since) {
-                        return;
-                      } else {
-                        getSelectedTextOrPrompt('输入结束时间').then(function (until) {
-                          if (!until) {
-                            return;
-                          }
-                          git
-                            .logMonth({
-                              author: author,
-                              since: since,
-                              until: until,
-                            })
-                            .then((result) => {
-                              console.log(result, 'git-code-statistic.gitcode');
-          
-                              // 新创建一个页面，用了存放生成的数据
-                              const panel = window.createWebviewPanel(
-                                'git-code-statistic', // 只供内部使用，这个 webview 的标识
-                                'git code statistic', // 给用户显示的面板标题
-                                ViewColumn.One, // 给新的 webview 面板一个编辑器视图
-                                {
-                                  enableScripts: true, // 启用 javascript 脚本
-                                  retainContextWhenHidden: true, // 隐藏时保留上下文
-                                } // webview 面板的内容配置
-                              );
-                              panel.webview.html = (result as string).slice(5);
-                              // 显示提示框
-                              // vscode.window.showInformationMessage(result);
-                            });
-                        });
-                      }
-                    }); */
+                    searchByCustomDate(author);
                 }
             });
         });
@@ -169,7 +137,6 @@ function activate(context) {
         });
     }), vscode_1.commands.registerCommand(`userList.item.search`, (user) => {
         let userName = user.label.split(' ')[0];
-        // searchByDate(userName);
         // 打开一个快速选择列表
         vscode_1.window
             .showQuickPick(
@@ -212,11 +179,11 @@ function activate(context) {
                 searchBySetDate(userName, dayjs().add(-1, 'month').startOf('month').format('YYYY-MM-DD'), dayjs().add(-1, 'month').endOf('month').format('YYYY-MM-DD'));
             }
             else if (label === 'Past six months') {
-                searchBySetDate(userName, dayjs().add(-5, 'month').startOf('month').format('YYYY-MM-DD'), dayjs().endOf('month').format('YYYY-MM-DD'), ChartJSSrc);
+                searchByCustomDate(userName, dayjs().add(-5, 'month').startOf('month').format('YYYY-MM-DD'), dayjs().endOf('month').format('YYYY-MM-DD'));
             }
             else {
                 // 自定义日期
-                searchByDate(userName);
+                searchByCustomDate(userName);
             }
         });
     }));
@@ -224,62 +191,89 @@ function activate(context) {
 exports.activate = activate;
 // 追踪当前 webview 面板
 let currentPanel = undefined;
-function searchByDate(userName) {
-    getSelectedTextOrPrompt('输入开始时间,如2020-01-31或2020/01/31').then(function (since) {
-        if (!since) {
-            return;
-        }
-        else {
-            getSelectedTextOrPrompt('输入结束时间，如2080-01-31或2080/01/31').then(function (until) {
-                if (!until) {
-                    return;
-                }
-                git
-                    .logMonth({
-                    author: userName,
-                    since: since,
-                    until: until,
-                })
-                    .then((result) => {
-                    // 获取当前活动的编辑器
-                    const columnToShowIn = vscode_1.window.activeTextEditor
-                        ? vscode_1.window.activeTextEditor.viewColumn
-                        : undefined;
-                    if (currentPanel) {
-                        // 如果我们已经有了一个面板，那就把它显示到目标列布局中
-                        // currentPanel.reveal(columnToShowIn);
-                        // 当前面板被关闭后重置
-                        // 先进行销毁
-                        currentPanel.dispose();
-                        /* 新创建一个页面，用了存放生成的数据 */
-                        currentPanel = vscode_1.window.createWebviewPanel('git-code-statistic', // 只供内部使用，这个 webview 的标识
-                        'git code statistic', // 给用户显示的面板标题
-                        vscode_1.ViewColumn.One, // 给新的 webview 面板一个编辑器视图
-                        {
-                            enableScripts: true, // 启用 javascript 脚本
-                            retainContextWhenHidden: true, // 隐藏时保留上下文
-                        } // webview 面板的内容配置
-                        );
-                        currentPanel.webview.html = setPanelHtml(userName, since, until, result);
+function createCurrentPanel() {
+    // 获取当前活动的编辑器
+    const columnToShowIn = vscode_1.window.activeTextEditor
+        ? vscode_1.window.activeTextEditor.viewColumn
+        : undefined;
+    if (currentPanel) {
+        // 如果我们已经有了一个面板，那就把它显示到目标列布局中
+        // currentPanel.reveal(columnToShowIn);
+        // 当前面板被关闭后重置
+        // 先进行销毁
+        currentPanel.dispose();
+        /* 新创建一个页面，用了存放生成的数据 */
+        currentPanel = vscode_1.window.createWebviewPanel('git-code-statistic', // 只供内部使用，这个 webview 的标识
+        'git code statistic', // 给用户显示的面板标题
+        vscode_1.ViewColumn.One, // 给新的 webview 面板一个编辑器视图
+        {
+            enableScripts: true, // 启用 javascript 脚本
+            retainContextWhenHidden: true, // 隐藏时保留上下文
+        } // webview 面板的内容配置
+        );
+    }
+    else {
+        /* 新创建一个页面，用了存放生成的数据 */
+        currentPanel = vscode_1.window.createWebviewPanel('git-code-statistic', // 只供内部使用，这个 webview 的标识
+        'git code statistic', // 给用户显示的面板标题
+        vscode_1.ViewColumn.Active, // 给新的 webview 面板一个编辑器视图
+        {
+            enableScripts: true, // 启用 javascript 脚本
+            retainContextWhenHidden: true, // 隐藏时保留上下文
+        } // webview 面板的内容配置
+        );
+    }
+}
+function searchByCustomDate(userName, since, until) {
+    // 创建当前面板
+    createCurrentPanel();
+    // 查询最近6个月的数据
+    if (since && until) {
+        git.logAcrossMonths(userName, since, until).then((result) => {
+            currentPanel.webview.html = setMoreMonthPanelHtml(userName, since, until, result);
+        });
+    }
+    else {
+        // 从用户输入的时间查询, 如2020-01-31或2020/01/31
+        getSelectedTextOrPrompt('输入开始时间,如2020-01-31或2020/01/31').then(function (since) {
+            if (!since) {
+                return;
+            }
+            else {
+                getSelectedTextOrPrompt('输入结束时间，如2080-01-31或2080/01/31').then(function (until) {
+                    if (!until) {
+                        return;
+                    }
+                    // 判断间隔月份，是否大于2个月
+                    if (dayjs(until).diff(dayjs(since), 'month') < 1) {
+                        // 只是在一个月的范围
+                        git
+                            .logMonth({
+                            author: userName,
+                            since: since,
+                            until: until,
+                        })
+                            .then((result) => {
+                            currentPanel.webview.html = setPanelHtml(userName, since, until, result);
+                        });
                     }
                     else {
-                        /* 新创建一个页面，用了存放生成的数据 */
-                        currentPanel = vscode_1.window.createWebviewPanel('git-code-statistic', // 只供内部使用，这个 webview 的标识
-                        'git code statistic', // 给用户显示的面板标题
-                        vscode_1.ViewColumn.Active, // 给新的 webview 面板一个编辑器视图
-                        {
-                            enableScripts: true, // 启用 javascript 脚本
-                            retainContextWhenHidden: true, // 隐藏时保留上下文
-                        } // webview 面板的内容配置
-                        );
-                        currentPanel.webview.html = setPanelHtml(userName, since, until, result);
+                        // 多月的范围
+                        git
+                            .logAcrossMonths(userName, since, until)
+                            .then((result) => {
+                            console.log(result, 'result');
+                            currentPanel.webview.html = setMoreMonthPanelHtml(userName, since, until, result);
+                        });
                     }
                 });
-            });
-        }
-    });
+            }
+        });
+    }
 }
-function searchBySetDate(userName, since, until, ChartJSSrc) {
+// 查询指定单月的数据
+function searchBySetDate(userName, since, until) {
+    createCurrentPanel();
     git
         .logMonth({
         author: userName,
@@ -287,43 +281,12 @@ function searchBySetDate(userName, since, until, ChartJSSrc) {
         until: until,
     })
         .then((result) => {
-        // 获取当前活动的编辑器
-        const columnToShowIn = vscode_1.window.activeTextEditor
-            ? vscode_1.window.activeTextEditor.viewColumn
-            : undefined;
-        if (currentPanel) {
-            // 如果我们已经有了一个面板，那就把它显示到目标列布局中
-            // currentPanel.reveal(columnToShowIn);
-            // 当前面板被关闭后重置
-            // 先进行销毁
-            currentPanel.dispose();
-            /* 新创建一个页面，用了存放生成的数据 */
-            currentPanel = vscode_1.window.createWebviewPanel('git-code-statistic', // 只供内部使用，这个 webview 的标识
-            'git code statistic', // 给用户显示的面板标题
-            vscode_1.ViewColumn.One, // 给新的 webview 面板一个编辑器视图
-            {
-                enableScripts: true, // 启用 javascript 脚本
-                retainContextWhenHidden: true, // 隐藏时保留上下文
-            } // webview 面板的内容配置
-            );
-            currentPanel.webview.html = setPanelHtml(userName, since, until, result, ChartJSSrc);
-        }
-        else {
-            /* 新创建一个页面，用了存放生成的数据 */
-            currentPanel = vscode_1.window.createWebviewPanel('git-code-statistic', // 只供内部使用，这个 webview 的标识
-            'git code statistic', // 给用户显示的面板标题
-            vscode_1.ViewColumn.Active, // 给新的 webview 面板一个编辑器视图
-            {
-                enableScripts: true, // 启用 javascript 脚本
-                retainContextWhenHidden: true, // 隐藏时保留上下文
-            } // webview 面板的内容配置
-            );
-            currentPanel.webview.html = setPanelHtml(userName, since, until, result, ChartJSSrc);
-        }
+        currentPanel.webview.html = setPanelHtml(userName, since, until, result);
     });
 }
-const setPanelHtml = (userName, since, until, result, ChartJSSrc) => {
-    return `
+// 设置单月的显示数据
+const setPanelHtml = (userName, since, until, result) => {
+    return `<!DOCTYPE html>
     <html lang="en">
       <head>
         <meta charset="UTF-8">
@@ -331,9 +294,58 @@ const setPanelHtml = (userName, since, until, result, ChartJSSrc) => {
         <title>git code analysis</title>
       </head>
       <body>
-        <h3>git code analysis</h3>
+        <h3 id="myTitle">git code analysis</h3>
         <p>The project submitted code line by <b>${userName}</b> from <b>${since}</b> to <b>${until}</b> is as follows</p>
-        <div style='font-size: 18px;'>${result.slice(5)}</div>
+        <div style='font-size: 18px;'>${result}</div>
+      </body>
+    </html>
+  `;
+};
+// 设置多个月的显示数据
+const setMoreMonthPanelHtml = (userName, since, until, result) => {
+    let labelsArr = [];
+    let dataArr = [];
+    result.forEach((item) => {
+        labelsArr.push(item.date.replace('-', ''));
+        dataArr.push(item.value);
+    });
+    return `<!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>git code analysis</title>
+      </head>
+      <body>
+        ${result.length > 0 ? `<canvas id="myGitChart" height="400" width="660"></canvas>` : ''}
+        <h3 id="myTitle">git code analysis</h3>
+        <p>The project submitted code line by <b>${userName}</b> from <b>${since}</b> to <b>${until}</b> is ${result.length > 0 ? 'above chart.' : 'no submit code.'} </p>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script type="text/javascript">
+          let canvas = document.getElementById('myGitChart');
+          let myTitle = document.getElementById('myTitle');
+          new Chart(canvas, {
+            type: 'bar',
+            data: {
+              labels: [${labelsArr}],
+              datasets: [
+                {
+                  label: 'edit code line',
+                  data: [${dataArr}],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+         
+        </script>
       </body>
     </html>
   `;
@@ -351,6 +363,18 @@ function getSelectedTextOrPrompt(prompt) {
         }
         return resolve(vscode_1.window.showInputBox({ prompt }));
     });
+}
+function getWebViewContent(context, templatePath, panel) {
+    const resourcePath = path.join(context.extensionPath, templatePath);
+    const dirPath = path.dirname(resourcePath);
+    let htmlIndexPath = fs.readFileSync(resourcePath, 'utf-8');
+    const html = htmlIndexPath.replace(/(<link.+?href="|<script.+?src="|<img.+?src=")(.+?)"/g, (m, $1, $2) => {
+        const absLocalPath = path.resolve(dirPath, $2);
+        const webviewUri = panel.webview.asWebviewUri(vscode_1.Uri.file(absLocalPath));
+        const replaceHref = $1 + webviewUri.toString() + '"';
+        return replaceHref;
+    });
+    return html;
 }
 // This method is called when your extension is deactivated
 function deactivate() { }
@@ -381,6 +405,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GitTools = void 0;
 const child_process_1 = __webpack_require__(3);
+const dayjs = __webpack_require__(5);
 class GitTools {
     constructor(cwd) {
         this.cwd = cwd;
@@ -417,8 +442,92 @@ class GitTools {
     logMonth(params) {
         return __awaiter(this, void 0, void 0, function* () {
             // const res = await this.startChildProcess('echo', ['-e', 'A line1\nB line 2', '|', 'awk', 'BEGIN{ print "Start" } { print } END{ print "End" }']);
-            const res = yield this.startChildProcessNoParams(`git log --author="${params.author}" --pretty=tformat: --numstat --since=${params.since} --until=${params.until} | awk 'BEGIN{ print "Start" } { add += $1; subs += $2; all += $1 + $2 } END{ print "add line: "add " remove line: "subs " all line: "all }'`);
-            return res;
+            // 根据日期，作者，统计代码的提交行数
+            const res = yield this.startChildProcessNoParams(`git log --author="${params.author}" --pretty=tformat: --numstat --since=${params.since} --until=${params.until}`);
+            let resArr = [];
+            res.split('\n').forEach((item) => {
+                item && resArr.push(item.split('\t'));
+            });
+            if (resArr.length === 0) {
+                return 'No submitted data！';
+            }
+            // 处理添加行数据
+            let addLineNum = resArr.reduce((pre, current) => {
+                return ((isNaN(parseInt(pre)) ? 0 : parseInt(pre)) +
+                    (isNaN(parseInt(current[0])) ? 0 : parseInt(current[0])));
+            }, 0);
+            // 处理删除行数据
+            let delLineNum = resArr.reduce((pre, current) => {
+                return ((isNaN(parseInt(pre)) ? 0 : parseInt(pre)) +
+                    (isNaN(parseInt(current[1])) ? 0 : parseInt(current[1])));
+            }, 0);
+            return `add line: ${addLineNum} remove line: ${delLineNum} total edit line: ${addLineNum + delLineNum}`;
+        });
+    }
+    // 跨越多个月份
+    logAcrossMonths(userName, since, until) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let resultArr = [];
+            let monthArr = [];
+            monthArr.push({
+                label: dayjs(since).format('YYYY-MM'),
+                start: since,
+                end: dayjs(since).endOf('month').format('YYYY-MM-DD'),
+            });
+            let diff = dayjs(until).diff(since, 'month');
+            for (let i = 1; i <= diff; i++) {
+                monthArr.push({
+                    label: dayjs(since).add(i, 'month').format('YYYY-MM'),
+                    start: dayjs(since)
+                        .add(i, 'month')
+                        .startOf('month')
+                        .format('YYYY-MM-DD'),
+                    end: dayjs(since).add(i, 'month').endOf('month').format('YYYY-MM-DD'),
+                });
+            }
+            if (monthArr[monthArr.length - 1].label !== dayjs(until).format('YYYY-MM')) {
+                monthArr.push({
+                    label: dayjs(until).format('YYYY-MM'),
+                    start: dayjs(until).startOf('month').format('YYYY-MM-DD'),
+                    end: until,
+                });
+            }
+            /* await Promise.all(fileNames.map(async (file) => {
+              const contents = await fs.readFile(file, 'utf8');
+              console.log(contents);
+            })); */
+            const promiseAll = yield Promise.all(monthArr.map((item) => __awaiter(this, void 0, void 0, function* () {
+                let res = yield this.startChildProcessNoParams(`git log --author="${userName}" --pretty=tformat: --numstat --since=${item.start} --until=${item.end}`);
+                if (res.length === '') {
+                    resultArr.push({
+                        date: item.label,
+                        value: null,
+                    });
+                }
+                let resArr = [];
+                res.split('\n').forEach((item) => {
+                    item && resArr.push(item.split('\t'));
+                });
+                // 处理添加行数据
+                let addLineNum = resArr.reduce((pre, current) => {
+                    return ((isNaN(parseInt(pre)) ? 0 : parseInt(pre)) +
+                        (isNaN(parseInt(current[0])) ? 0 : parseInt(current[0])));
+                }, 0);
+                // 处理删除行数据
+                let delLineNum = resArr.reduce((pre, current) => {
+                    return ((isNaN(parseInt(pre)) ? 0 : parseInt(pre)) +
+                        (isNaN(parseInt(current[1])) ? 0 : parseInt(current[1])));
+                }, 0);
+                resultArr.push({
+                    date: item.label,
+                    value: addLineNum + delLineNum,
+                });
+                return resultArr;
+            })));
+            // 查询代码量
+            // let returnVal = resultArr.filter((item) => Boolean(item.value));
+            // resolve(returnVal)
+            return promiseAll[0].filter((item) => Boolean(item.value));
         });
     }
     testAwk1(params) {
@@ -450,7 +559,16 @@ class GitTools {
             // git log --pretty=format:"%an <%ae>"| sort -u
             try {
                 const res = yield this.startChildProcessNoParams(`git log --pretty=format:"%an <%ae>"| sort -u`);
-                return res;
+                let resArr = res.split('\n');
+                let resSet = new Set();
+                resArr.forEach((item) => {
+                    item && resSet.add(item);
+                });
+                return [...resSet]
+                    .sort((a, b) => {
+                    return a[0] > b[0] ? 1 : -1;
+                })
+                    .join('\n');
             }
             catch (err) {
                 console.error(err);
@@ -502,31 +620,18 @@ class GitTools {
     }
     startChildProcessNoParams(command) {
         return new Promise((resolve, reject) => {
-            var process = (0, child_process_1.spawn)(command, {
+            var process = (0, child_process_1.spawnSync)(command, {
                 cwd: this.cwd,
                 shell: true,
+                encoding: 'utf8',
             });
             var logMessage = `${command}`;
             var cmdMessage = '';
-            process.stdout.on('data', (data) => {
-                console.log(`${logMessage} start ---`, data);
-                if (!data) {
-                    reject(`${logMessage} error1 : ${data}`);
-                }
-                else {
-                    cmdMessage = data.toString();
-                }
-            });
-            process.on('close', (data) => {
-                console.log(`${logMessage} close ---`, data);
-                if (data) {
-                    reject(`${logMessage} error2 ! ${data}`);
-                }
-                else {
-                    console.log(`${logMessage} success !`);
-                    resolve(cmdMessage);
-                }
-            });
+            if (process.error) {
+                console.log('ERROR: ', process.error);
+                reject(process.error);
+            }
+            resolve(process.stdout);
         });
     }
 }
@@ -618,6 +723,12 @@ exports.default = TreeProvider;
 /***/ (function(module, exports) {
 
 module.exports = require("path");
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports) {
+
+module.exports = require("fs");
 
 /***/ })
 /******/ ]);
